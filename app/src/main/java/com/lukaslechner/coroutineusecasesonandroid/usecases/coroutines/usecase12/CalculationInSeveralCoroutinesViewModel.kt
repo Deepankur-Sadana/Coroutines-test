@@ -11,6 +11,7 @@ import kotlin.system.measureTimeMillis
 
 class CalculationInSeveralCoroutinesViewModel(
     private val factorialCalculator: FactorialCalculator = FactorialCalculator(),
+    private val factorialCalculator2: FactorialCalculator2 = FactorialCalculator2(),
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : BaseViewModel<UiState>() {
 
@@ -24,6 +25,7 @@ class CalculationInSeveralCoroutinesViewModel(
             var factorialResult: BigInteger
             val computationDuration = measureTimeMillis {
                 factorialResult =
+//                    factorialCalculator2.calculateFactorial(
                     factorialCalculator.calculateFactorial(
                         factorialOf,
                         numberOfCoroutines,
