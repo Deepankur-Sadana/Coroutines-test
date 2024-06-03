@@ -6,6 +6,7 @@ import com.lukaslechner.coroutineusecasesonandroid.mock.MockApi
 import com.lukaslechner.coroutineusecasesonandroid.mock.VersionFeatures
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -38,20 +39,20 @@ class TimeoutAndRetryViewModel(
             }
         }
         viewModelScope.launch {
-            val features = listOf( async1.await() , async2.await())
+            val features = listOf(async1, async2).awaitAll()
             uiState.value = UiState.Success(features)
         }
 
     }
 
-    private suspend  fun <T> retryWithTimeout(
+    private suspend fun <T> retryWithTimeout(
         numberOfRetries: Int,
         initialDelayMillis: Long = 100L,
         maxBackOffDelayedTime: Long = Long.MAX_VALUE,
         factor: Double = 2.0,
         timeoutDuration: Long = 1500,
         block: suspend () -> T
-    ) :T {
+    ): T {
         var currDelay = initialDelayMillis
         repeat(numberOfRetries) { attempt ->
             try {
@@ -72,6 +73,32 @@ class TimeoutAndRetryViewModel(
 
     private suspend fun getVersionFeatures(version: Int): VersionFeatures {
         return api.getAndroidVersionFeatures(version)
+    }
+
+    suspend fun retryWithTimeout(
+        numberOfRetries: Int,
+        timeout: Long,
+        block: () -> Unit
+    ) {
+        withTimeout(timeout) {
+            retry(numberOfRetries, 100, block)
+        }
+    }
+
+    private suspend fun <T> retry(
+        numberOfRetries: Int,
+        delayBetweenRetries: Long,
+        block: () -> T
+    ): T {
+        repeat(numberOfRetries) {
+            try {
+                return block()
+            } catch (e: Exception) {
+
+            }
+            delay(delayBetweenRetries)
+        }
+        return block()
     }
 
 }
