@@ -40,6 +40,7 @@ class CalculationInBackgroundViewModel : BaseViewModel<UiState>() {
         for (i in number downTo 1) {
             factorial *= i.toBigInteger()
         }
+        Timber.d("calculating fact completed")
         factorial
     }
 
