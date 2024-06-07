@@ -1,12 +1,21 @@
 package com.lukaslechner.coroutineusecasesonandroid.usecases.flow.usecase2
 
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.asLiveData
 import com.lukaslechner.coroutineusecasesonandroid.base.BaseViewModel
+import com.lukaslechner.coroutineusecasesonandroid.playground.list
+import com.lukaslechner.coroutineusecasesonandroid.usecases.flow.mock.Stock
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.take
 
 class FlowUseCase2ViewModel(
-    stockPriceDataSource: StockPriceDataSource,
-    defaultDispatcher: CoroutineDispatcher
+    private val stockPriceDataSource: StockPriceDataSource,
+    val defaultDispatcher: CoroutineDispatcher
 ) : BaseViewModel<UiState>() {
 
     /*
@@ -23,5 +32,30 @@ class FlowUseCase2ViewModel(
 
      */
 
-    val currentStockPriceAsLiveData: LiveData<UiState> = TODO()
+    val currentStockPriceAsLiveData = getStocks()
+
+    private fun getStocks(): LiveData<UiState> {
+        return stockPriceDataSource.latestStockList
+            .take(10)
+            .onEach { println("FLOW logging $it") }
+            .filter { list ->
+                var emit = false
+                list.forEach {
+                    if(it.name == "Alphabet (Google)") {
+                        emit = it.currentPrice >= 2300
+                    }
+                }
+                emit
+            }
+            .map { list ->//UC 2
+                list.filter { it.country == "United States" }
+            }
+            .map {list ->
+                list.filterNot { it.name == "Microsoft" || it.name == "Apple" }
+            }
+            .map { it.take(10) }
+            .map { UiState.Success(it) as UiState }
+            .onStart { UiState.Loading }
+            .asLiveData(Dispatchers.Default) // UC8
+    }
 }
